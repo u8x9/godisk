@@ -1,10 +1,14 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/u8x9/godisk/meta"
+	"github.com/u8x9/godisk/util"
 )
 
 // showErr 在页面上显示错误信息
@@ -30,16 +34,23 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer file.Close()
-		newFile, err := os.Create("/tmp/" + head.Filename)
+		location := "/tmp/" + head.Filename
+		fileMeta := meta.NewFileMeta(head.Filename, location)
+		newFile, err := os.Create(location)
 		if err != nil {
 			showErr(w, err)
 			return
 		}
 		defer newFile.Close()
-		if _, err := io.Copy(newFile, file); err != nil {
+		fileMeta.FileSize, err = io.Copy(newFile, file)
+		if err != nil {
 			showErr(w, err)
 			return
 		}
+		newFile.Seek(0, 0)
+		fileMeta.FileSha1 = util.FileSha1(newFile)
+		meta.UpdateFileMeta(fileMeta)
+		fmt.Printf("%#v\n", fileMeta)
 		// 重定向在上传成功页面
 		http.Redirect(w, r, "/file/upload/success", http.StatusFound)
 	}

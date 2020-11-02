@@ -38,3 +38,15 @@ func UpdateFileMeta(fmeta *FileMeta) {
 func GetFileMeta(fileSha1 string) *FileMeta {
 	return fileMetas[fileSha1]
 }
+func GetLastFileMetas(limit int) []*FileMeta {
+	s := make([]*FileMeta, 0, limit)
+	i := 0
+	for _, fm := range fileMetas {
+        if i >= limit {
+            break
+        }
+		s = append(s, fm)
+		i++
+	}
+	return s
+}

@@ -2,11 +2,13 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/u8x9/godisk/meta"
 	"github.com/u8x9/godisk/util"
@@ -74,5 +76,35 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Add("content-type", "application/json;charset=utf-8")
+	w.Write(buf)
+}
+
+func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	limitCnt, _ := strconv.Atoi(r.Form.Get("limit"))
+	fileMetas := meta.GetLastFileMetas(limitCnt)
+	data, err := json.Marshal(fileMetas)
+	if err != nil {
+		showErr(w, err)
+		return
+	}
+	w.Write(data)
+}
+
+func DownloadHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	filehash := r.Form.Get("filehash")
+	fileMeata := meta.GetFileMeta(filehash)
+	if fileMeata == nil {
+		showErr(w, errors.New("不存在的文件"))
+		return
+	}
+	buf, err := ioutil.ReadFile(fileMeata.Location)
+	if err != nil {
+		showErr(w, err)
+		return
+	}
+	w.Header().Set("content-type", "application/octect-stream")
+	w.Header().Set("content-disposition", fmt.Sprintf(`attachment;filename="%s"`, fileMeata.FileName))
 	w.Write(buf)
 }

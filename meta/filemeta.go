@@ -1,6 +1,7 @@
 package meta
 
 import (
+	"sort"
 	"time"
 )
 
@@ -22,6 +23,19 @@ func NewFileMeta(filename, location string) *FileMeta {
 }
 
 type FileMetaData map[string]*FileMeta // key: FileSha1
+type ByUploadTime []*FileMeta
+
+func (t ByUploadTime) Len() int {
+	return len(t)
+}
+func (t ByUploadTime) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
+func (t ByUploadTime) Less(i, j int) bool {
+	itime, _ := time.Parse("2006-01-02 15:04:05", t[i].UploadAt)
+	jtime, _ := time.Parse("2006-01-02 15:04:05", t[j].UploadAt)
+	return itime.Sub(jtime) < 0
+}
 
 var fileMetas FileMetaData
 
@@ -39,14 +53,18 @@ func GetFileMeta(fileSha1 string) *FileMeta {
 	return fileMetas[fileSha1]
 }
 func GetLastFileMetas(limit int) []*FileMeta {
-	s := make([]*FileMeta, 0, limit)
-	i := 0
-	for _, fm := range fileMetas {
-        if i >= limit {
-            break
-        }
-		s = append(s, fm)
-		i++
+	s := make([]*FileMeta, 0, len(fileMetas))
+	for _, v := range fileMetas {
+		s = append(s, v)
 	}
-	return s
+	sort.Sort(ByUploadTime(s))
+	return s[0:limit]
+}
+func RemoveFileMeta(filehash string) *FileMeta {
+	fileMeta, ok := fileMetas[filehash]
+	if !ok {
+		return nil
+	}
+	delete(fileMetas, filehash)
+	return fileMeta
 }

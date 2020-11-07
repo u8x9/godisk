@@ -108,3 +108,45 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-disposition", fmt.Sprintf(`attachment;filename="%s"`, fileMeata.FileName))
 	w.Write(buf)
 }
+
+func FileMetaUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	r.ParseForm()
+
+	op := r.Form.Get("op") // 操作
+
+	if op != "0" {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	filehash := r.Form.Get("filehash")
+	filename := r.Form.Get("filename")
+
+	fileMeta := meta.GetFileMeta(filehash)
+	if nil == fileMeta {
+		showErr(w, errors.New("not exists"))
+		return
+	}
+
+	fileMeta.FileName = filename
+	meta.UpdateFileMeta(fileMeta)
+
+	buf, _ := json.Marshal(fileMeta)
+	w.Write(buf)
+}
+
+func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	filehash := r.Form.Get("filehash")
+	fileMeta := meta.RemoveFileMeta(filehash)
+	if fileMeta != nil {
+		os.Remove(fileMeta.Location)
+	}
+	w.Write([]byte("OK"))
+
+}
+

@@ -4,9 +4,15 @@ import (
 	"log"
 	"net/http"
 
+	mydb "github.com/u8x9/godisk/db/mysql"
 	"github.com/u8x9/godisk/handler"
 )
 
+func init() {
+	if err := mydb.Init(); err != nil {
+		panic(err)
+	}
+}
 func main() {
 	http.HandleFunc("/file/upload", handler.UploadHandler)
 	http.HandleFunc("/file/upload/success", handler.UploadSuccessHandler)

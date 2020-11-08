@@ -52,7 +52,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		newFile.Seek(0, 0)
 		fileMeta.FileSha1 = util.FileSha1(newFile)
-		meta.UpdateFileMeta(fileMeta)
+		//meta.UpdateFileMeta(fileMeta)
+		meta.UpdateFileMetaDB(fileMeta)
 		fmt.Printf("%#v\n", fileMeta)
 		// 重定向在上传成功页面
 		http.Redirect(w, r, "/file/upload/success", http.StatusFound)
@@ -69,7 +70,12 @@ func UploadSuccessHandler(w http.ResponseWriter, r *http.Request) {
 func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	filehash := r.Form.Get("filehash")
-	fileMeta := meta.GetFileMeta(filehash)
+	//fileMeta := meta.GetFileMeta(filehash)
+	fileMeta, err := meta.GetFileMetaDB(filehash)
+	if err != nil {
+		showErr(w, err)
+		return
+	}
 	buf, err := json.Marshal(fileMeta)
 	if err != nil {
 		showErr(w, err)
